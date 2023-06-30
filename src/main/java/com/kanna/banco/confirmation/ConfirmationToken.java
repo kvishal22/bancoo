@@ -17,12 +17,11 @@ import java.util.UUID;
 @Data
 public class ConfirmationToken{
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long tokenId;
 
-    private String confirmationToken;
+    private String randomToken;
 
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt;
@@ -33,7 +32,6 @@ public class ConfirmationToken{
     public ConfirmationToken(User user) {
         this.user = user;
         createdAt = new Date();
-        confirmationToken = UUID.randomUUID().toString();
+        randomToken = UUID.randomUUID().toString();
     }
-
 }

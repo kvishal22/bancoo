@@ -18,17 +18,17 @@ public class Token {
 
     @Id
     @GeneratedValue
-    public Integer id;
-    public String token;
+    private Integer id;
+    private String jwtToken;
 
     @Enumerated(EnumType.STRING)
     public TokenType tokenType = TokenType.BEARER;
-
-    public boolean revoked;
-
-    public boolean expired;
+    private boolean revoked;
+    private boolean expired;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+
+
 }

@@ -1,7 +1,6 @@
 package com.kanna.banco.auth;
 
-import com.kanna.banco.dto.*;
-import com.kanna.banco.service.UserService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +16,5 @@ public class AuthController {
     public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationReq req){
         return ResponseEntity.ok(authService.authenticate(req));
     }
-
 
 }

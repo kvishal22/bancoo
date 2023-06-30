@@ -12,8 +12,10 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @Builder
 public class TransferMoney {
+
     private String fromAccountNumber;
     private String toAccountNumber;
     private BigDecimal amount;
+    private String password;
 
 }

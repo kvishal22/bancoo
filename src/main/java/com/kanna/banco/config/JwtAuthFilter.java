@@ -3,7 +3,6 @@ package com.kanna.banco.config;
 import com.kanna.banco.token.TokenRepo;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,27 +18,12 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @Component
+@RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    public  JwtAuthFilter(){
-    }
-    @Autowired
-    private  TokenRepo  tokenRepo;
-    @Autowired
-    private   JwtService jwtService;
-    @Autowired
-    private  UserDetailsService userDetailsService;
-
-    public JwtAuthFilter(TokenRepo tokenRepo) {
-        this.tokenRepo = tokenRepo;
-    }
-    public JwtAuthFilter(JwtService jwtService) {
-        this.jwtService = jwtService;
-    }
-    public JwtAuthFilter(UserDetailsService userDetailsService) {
-        this.userDetailsService = userDetailsService;
-    }
-
+    private  final TokenRepo  tokenRepo;
+    private   final JwtService jwtService;
+    private  final UserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(
@@ -64,7 +48,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             var isTokenValid = tokenRepo.findByToken(jwt)
                     .map(token -> !token.isExpired() && !token.isRevoked())
                     .orElse(false);
-            if(jwtService.isTokenValid(jwt,userDetails) && isTokenValid){
+            if(jwtService.isTokenValid(jwt,userDetails) && Boolean.TRUE.equals(isTokenValid) ){
                 UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                         userDetails,null,userDetails.getAuthorities()
                 );

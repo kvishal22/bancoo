@@ -2,23 +2,28 @@ package com.kanna.banco.controller;
 
 import com.kanna.banco.confirmation.ConfirmationService;
 import com.kanna.banco.confirmation.ConfirmationTokenController;
+import com.kanna.banco.dto.BankResponse;
 import com.kanna.banco.dto.UserReq;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.http.*;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.client.RestTemplate;
+
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
-
-/*@RunWith(MockitoJUnitRunner.class)
-public class ConfirmationTokenControllerTest {
+ class ConfirmationTokenControllerTest {
 
     @InjectMocks
     private ConfirmationTokenController confirmationTokenController;
@@ -28,63 +33,52 @@ public class ConfirmationTokenControllerTest {
 
     private MockMvc mockMvc;
 
-    @Before
+    @BeforeEach
     public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        confirmationTokenController = new ConfirmationTokenController(confirmationService);
         mockMvc = MockMvcBuilders.standaloneSetup(confirmationTokenController).build();
     }
     @Test
-    public void testRegisterAccountNew() throws Exception {
-        UserReq userReq = new UserReq();
-        userReq.setFirstName("Kishore");
-        userReq.setLastName("K");
-        userReq.setEmail("kishoregillu@gmail.com");
-        userReq.setAddress("njd");
-        userReq.setPhoneNumber("9787617019");
-        userReq.setAlternateNumber("234234234");
-        userReq.setPassword("2344234");
-        userReq.setState("TN");
+     void testRegisterAccountNew() throws Exception {
+        UserReq userReq = new UserReq("vishal", "kanna","njd","tn","vk","234","2344","@34234");
 
         String expectedResult = "check your email to verify";
 
-        RestTemplate restTemplate = new RestTemplate();
+       when(confirmationService.registerUser(Mockito.any(UserReq.class))).thenReturn(expectedResult);
+        when(confirmationService.registerUser(userReq)).thenReturn(expectedResult);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<UserReq> req = new HttpEntity<>(userReq, headers);
+        mockMvc.perform(post("/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"firstName\":\"vishal\"," +
+                                "\"lastName\":\"kanna\"," +
+                                        "\"address\":\"njd\","+
+                                "\"state\":\"tn\","+
+                                "\"email\":\"vk\"," +
+                                "\"phoneNumber\":\"234\","+
+                                "\"alternateNumber\":\"2344\","+
+                                "\"password\":\"@34234\"}")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.content().string(expectedResult))
+                .andDo(print());
 
-        ResponseEntity<String> response = restTemplate.postForEntity("http://localhost:8080/register",
-                req, String.class);
-        Assert.assertEquals(HttpStatus.OK, response.getStatusCode());
-        Assert.assertEquals(expectedResult, response.getBody());
-
+        verify(confirmationService, times(1)).registerUser(userReq);
+        verifyNoMoreInteractions(confirmationService);
     }
-
     @Test
-    public void testRegisterAccountExisting() throws Exception {
-        UserReq userReq = new UserReq();
-        userReq.setFirstName("vishal");
-        userReq.setLastName("kanna");
-        userReq.setEmail("vishalk@gmail.com");
-        userReq.setAddress("njd");
-        userReq.setPhoneNumber("38472738443");
-        userReq.setAlternateNumber("234234234");
-        userReq.setPassword("2344234");
-        userReq.setState("TN");
+     void confirmUserAccountShouldReturnBankResponse() throws Exception {
+        String confirmationToken = "123456";
+        BankResponse expectedResponse = new BankResponse();
 
-        String expectedResult = "user already exists";
+        when(confirmationService.activateAccount(anyString())).thenReturn(expectedResponse);
 
-        RestTemplate restTemplate = new RestTemplate();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<UserReq> req = new HttpEntity<>(userReq, headers);
-
-        ResponseEntity<String> response = restTemplate.postForEntity("http://localhost:8080/register",
-                req, String.class);
-        Assert.assertEquals(HttpStatus.OK, response.getStatusCode());
-        Assert.assertEquals(expectedResult, response.getBody());
+        mockMvc.perform(get("/confirm/account")
+                        .param("token", confirmationToken))
+                .andExpect(status().isOk());
+        verify(confirmationService,times(1)).activateAccount(confirmationToken);
 
     }
 }
-*/
+
 

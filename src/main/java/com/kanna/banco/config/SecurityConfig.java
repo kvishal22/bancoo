@@ -1,7 +1,7 @@
 package com.kanna.banco.config;
 
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -15,21 +15,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    public SecurityConfig(){}
-    @Autowired
-    private  AuthenticationProvider authenticationProvider;
-
-    public SecurityConfig(AuthenticationProvider authenticationProvider) {
-        this.authenticationProvider = authenticationProvider;
-    }
-    @Autowired
-    private  JwtAuthFilter jwtAuthFilter;
-
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
-        this.jwtAuthFilter = jwtAuthFilter;
-    }
+    private  final AuthenticationProvider authenticationProvider;
+    private  final JwtAuthFilter jwtAuthFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -38,6 +28,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests()
                 .antMatchers("/api/user/create",
                         "/api/user/authenticate",
+                        "/actuator/**",
+                        "/password/**",
                         "/register",
                         "/confirm/**",
                         "/v2/api-docs",

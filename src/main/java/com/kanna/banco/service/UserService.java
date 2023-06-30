@@ -2,7 +2,6 @@ package com.kanna.banco.service;
 
 import com.kanna.banco.dto.*;
 
-import java.math.BigDecimal;
 
 public interface UserService {
     BankResponse balanceEnquiry(EnquiryReq enquiryReq);

@@ -2,13 +2,10 @@ package com.kanna.banco.entity;
 
 import com.kanna.banco.dto.*;
 import com.kanna.banco.service.UserService;
-import com.kanna.banco.statement.TransactionService;
-import com.kanna.banco.statement.Transactions;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.util.List;
 
 @RequiredArgsConstructor
 @RestController

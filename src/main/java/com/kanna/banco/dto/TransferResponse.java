@@ -16,6 +16,6 @@ public class TransferResponse {
     private String responseCode;
     private String responseMessage;
     private AccountInfo accountInfo;
-    private BigDecimal debitedAmont;
+    private BigDecimal debitedAmount;
 
 }

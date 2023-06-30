@@ -6,77 +6,52 @@ import com.kanna.banco.entity.UserRepo;
 import com.kanna.banco.token.Token;
 import com.kanna.banco.token.TokenRepo;
 import com.kanna.banco.token.TokenType;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
-    public AuthService(){}
-    @Autowired
-    private  UserRepo userRepo;
+    private final UserRepo userRepo;
+    private final TokenRepo tokenRepo;
+    private final JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
 
-    public AuthService(UserRepo userRepo) {
-        this.userRepo = userRepo;
-    }
-    @Autowired
-    private  TokenRepo tokenRepo;
-    public AuthService(TokenRepo tokenRepo) {
-        this.tokenRepo = tokenRepo;
-    }
-    @Autowired
-    private  PasswordEncoder passwordEncoder;
 
-    public AuthService(PasswordEncoder passwordEncoder) {
-        this.passwordEncoder = passwordEncoder;
-    }
-    @Autowired
-    private  JwtService jwtService;
-
-    public AuthService(JwtService jwtService) {
-        this.jwtService = jwtService;
-    }
-    @Autowired
-    private  AuthenticationManager authenticationManager;
-
-    public AuthService(AuthenticationManager authenticationManager) {
-        this.authenticationManager = authenticationManager;
-    }
-
-    public AuthenticationResponse authenticate(AuthenticationReq request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
-        );
-        var user = userRepo.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("email does not exist"));
-        var jwtToken = jwtService.generateToken(user);
-        revokeAllUserTokens(user);
-        saveUserToken(user, jwtToken);
-        return AuthenticationResponse.builder()
-                .accessToken(jwtToken)
+        public AuthenticationResponse authenticate (AuthenticationReq request) {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(),
+                            request.getPassword()
+                    )
+            );
+                var user = userRepo.findByEmail(request.getEmail())
+                        .orElseThrow(() -> new UsernameNotFoundException("email does not exist"));
+                var jwtToken = jwtService.generateToken(user);
+                revokeAllUserTokens(user);
+                saveUserToken(user, jwtToken);
+                return AuthenticationResponse.builder()
+                        .accessToken(jwtToken)
+                        .build();
+            }
+        private void saveUserToken (User user, String jwtToken){
+        var token = Token.builder()
+                .user(user)
+                .jwtToken(jwtToken)
+                .tokenType(TokenType.BEARER)
+                .expired(false)
+                .revoked(false)
                 .build();
+        tokenRepo.save(token);
     }
-
-    private void saveUserToken(User user, String jwtToken) {
-            var token = Token.builder()
-                    .user(user)
-                    .token(jwtToken)
-                    .tokenType(TokenType.BEARER)
-                    .expired(false)
-                    .revoked(false)
-                    .build();
-            tokenRepo.save(token);
-    }
-    private void revokeAllUserTokens(User user){
-       var validUserTokens = tokenRepo.findAllValidTokenByUser(user.getId());
-        if(validUserTokens.isEmpty())
+        //private
+        public void revokeAllUserTokens (User user){
+        var validUserTokens = tokenRepo.findAllValidTokenByUser(user.getId());
+        if (validUserTokens.isEmpty())
             return;
         validUserTokens.forEach(token -> {
             token.setExpired(true);
@@ -84,4 +59,7 @@ public class AuthService {
         });
         tokenRepo.saveAll(validUserTokens);
     }
+
 }
+
+

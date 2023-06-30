@@ -3,12 +3,15 @@ package com.kanna.banco.service;
 import com.kanna.banco.dto.*;
 import com.kanna.banco.entity.User;
 import com.kanna.banco.entity.UserRepo;
+import com.kanna.banco.password.PasswordChangeEntity;
 import com.kanna.banco.statement.TransactionDto;
 import com.kanna.banco.statement.TransactionService;
 import com.kanna.banco.utils.AccountUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 
 @Service
@@ -18,111 +21,117 @@ public class UserServiceImpl implements UserService {
     private final UserRepo repo;
     private final Emailservice emailservice;
     private final TransactionService transactionService;
+    private final PasswordEncoder passwordEncoder;
 
-   @Override
+    @Override
     public BankResponse balanceEnquiry(EnquiryReq enquiryReq) {
         Boolean isAccountExist = repo.existsByAccountNumber(enquiryReq.getAccountNumber());
-        if (!isAccountExist) {
-            return BankResponse.builder()
-                    .responseCode(AccountUtils.ACCOUNT_NOT_EXIST_CODE)
-                    .responseMessage(AccountUtils.ACCOUNT_NOT_EXIST_MESSAGE)
-                    .accountInfo(null)
-                    .build();
-        }
         User foundUser = repo.findByAccountNumber(enquiryReq.getAccountNumber());
+        if (Boolean.TRUE.equals(isAccountExist) &&
+                passwordEncoder.matches(enquiryReq.getPassword(), foundUser.getPassword())) {
+                return BankResponse.builder()
+                        .responseCode(AccountUtils.ACCOUNT_FOUND_CODE)
+                        .responseMessage(AccountUtils.ACCOUNT_FOUND_MESSAGE)
+                        .accountInfo(AccountInfo.builder()
+                                .accountBalance(foundUser.getAccountBalance())
+                                .accountNumber(enquiryReq.getAccountNumber())
+                                .accountName(foundUser.getFirstName() + " " + foundUser.getLastName())
+                                .build())
+                        .build();
+        }
         return BankResponse.builder()
-                .responseCode(AccountUtils.ACCOUNT_FOUND_CODE)
-                .responseMessage(AccountUtils.ACCOUNT_FOUND_MESSAGE)
-                .accountInfo(AccountInfo.builder()
-                        .accountBalance(foundUser.getAccountBalance())
-                        .accountNumber(enquiryReq.getAccountNumber())
-                        .accountName(foundUser.getFirstName() + " " + foundUser.getLastName())
-                        .build())
+                .responseCode(AccountUtils.ACCOUNT_NOT_EXIST_CODE)
+                .responseMessage(AccountUtils.ACCOUNT_NOT_EXIST_MESSAGE)
+                .accountInfo(null)
                 .build();
     }
     @Override
     public String nameEnquiry(EnquiryReq enquiryReq) {
+
         Boolean isAccountExist = repo.existsByAccountNumber(enquiryReq.getAccountNumber());
-        if (!isAccountExist) {
-            return AccountUtils.ACCOUNT_NOT_EXIST_MESSAGE;
-        }
         User foundUser = repo.findByAccountNumber(enquiryReq.getAccountNumber());
-        return foundUser.getFirstName() + " " + foundUser.getLastName();
+
+        if (Boolean.TRUE.equals(isAccountExist) &&
+                passwordEncoder.matches(enquiryReq.getPassword(), foundUser.getPassword())) {
+                return foundUser.getFirstName() + " " + foundUser.getLastName();
+        }
+        return AccountUtils.INVALID_DETAILS;
     }
 
     @Override
     public BankResponse creditAccount(CreditDebitReq creditDebitReq) {
         Boolean isAccountExist = repo.existsByAccountNumber(creditDebitReq.getAccountNumber());
-        if (!isAccountExist) {
+        User userToCredit = repo.findByAccountNumber(creditDebitReq.getAccountNumber());
+        if (Boolean.TRUE.equals(isAccountExist) &&
+                passwordEncoder.matches(creditDebitReq.getPassword(), userToCredit.getPassword())) {
+            if (creditDebitReq.getAmount().equals(BigDecimal.valueOf(0.0)) ||
+                    creditDebitReq.getAmount().equals(BigDecimal.valueOf(0))) {
+                return BankResponse.builder()
+                        .responseMessage(AccountUtils.YOU_CANT_TRANSEFER_ZERO)
+                        .build();
+            } else {
+                userToCredit.setAccountBalance(userToCredit.getAccountBalance().add(creditDebitReq.getAmount()));
+                repo.save(userToCredit);
+                TransactionDto transactionDto = TransactionDto.builder()
+                        .accountNumber(userToCredit.getAccountNumber())
+                        .transactionType("credit")
+                        .amount(creditDebitReq.getAmount())
+                        .balanceAfterTransaction(userToCredit.getAccountBalance())
+                        .build();
+                transactionService.saveTransaction(transactionDto);
+                return BankResponse.builder()
+                        .responseCode(AccountUtils.ACCOUNT_CREDITED_SUCCESS)
+                        .responseMessage(AccountUtils.ACCOUNT_CREDITED_SUCCESS_MESSAGE)
+                        .accountInfo(AccountInfo.builder()
+                                .accountName(userToCredit.getFirstName() + " " + userToCredit.getLastName())
+                                .accountBalance(userToCredit.getAccountBalance())
+                                .accountNumber(creditDebitReq.getAccountNumber())
+                                .build())
+                        .build();
+            }
+        } else {
             return BankResponse.builder()
-                    .responseCode(AccountUtils.ACCOUNT_NOT_EXIST_CODE)
-                    .responseMessage(AccountUtils.ACCOUNT_NOT_EXIST_MESSAGE)
-                    .accountInfo(null)
+                    .responseCode(AccountUtils.INVALID_DETAILS)
                     .build();
         }
-
-        User userToCredit = repo.findByAccountNumber(creditDebitReq.getAccountNumber());
-        userToCredit.setAccountBalance(userToCredit.getAccountBalance().add(creditDebitReq.getAmount()));
-        repo.save(userToCredit);
-
-        TransactionDto transactionDto = TransactionDto.builder()
-                .accountNumber(userToCredit.getAccountNumber())
-                .transactionType("credit")
-                .amount(userToCredit.getAccountBalance())
-                .balanceAfterTransaction(userToCredit.getAccountBalance().add(creditDebitReq.getAmount()))
-                .build();
-
-        transactionService.saveTransaction(transactionDto);
-        return BankResponse.builder()
-                .responseCode(AccountUtils.ACCOUNT_CREDITED_SUCCESS)
-                .responseMessage(AccountUtils.ACCOUNT_CREDITED_SUCCESS_MESSAGE)
-                .accountInfo(AccountInfo.builder()
-                        .accountName(userToCredit.getFirstName() + " " + userToCredit.getLastName())
-                        .accountBalance(userToCredit.getAccountBalance())
-                        .accountNumber(creditDebitReq.getAccountNumber())
-                        .build())
-                .build();
     }
-
 
     @Override
     public TransferResponse transferMoney(TransferMoney req) {
         Boolean isFromAccountExist = repo.existsByAccountNumber(req.getFromAccountNumber());
         Boolean isToAccountExist = repo.existsByAccountNumber(req.getToAccountNumber());
-        if (!isFromAccountExist || !isToAccountExist) {
-            return TransferResponse.builder()
-                    .responseCode(AccountUtils.ACCOUNT_NOT_EXIST_CODE)
-                    .responseMessage(AccountUtils.ACCOUNT_NOT_EXIST_MESSAGE)
-                    .accountInfo(null)
-                    .build();
-        }
         User fromAccountNumber = repo.findByAccountNumber(req.getFromAccountNumber());
         User toAccountNumber = repo.findByAccountNumber(req.getToAccountNumber());
 
-        BigInteger availBal = fromAccountNumber.getAccountBalance().toBigInteger();
-        BigInteger amountToCredit = req.getAmount().toBigInteger();
-        if (availBal.intValue() < amountToCredit.intValue()) {
-            return TransferResponse.builder()
-                    .responseCode(AccountUtils.INSUFFICIENT_BALANCE_CODE)
-                    .responseMessage(AccountUtils.INSUFFICIENT_BALANCE_MESSAGE)
-                    .accountInfo(null)
-                    .build();
-        } else{
+        if (Boolean.TRUE.equals(isFromAccountExist) && Boolean.TRUE.equals(isToAccountExist) &&
+                passwordEncoder.matches(req.getPassword(),fromAccountNumber.getPassword())) {
+
+            BigInteger availBal = fromAccountNumber.getAccountBalance().toBigInteger();
+            BigInteger amountToCredit = req.getAmount().toBigInteger();
+
+            if (availBal.intValue() < amountToCredit.intValue() || amountToCredit.equals(BigInteger.valueOf(0)))
+                return TransferResponse.builder()
+                        .responseCode(AccountUtils.INSUFFICIENT_BALANCE_CODE)
+                        .responseMessage(AccountUtils.INSUFFICIENT_BALANCE_MESSAGE)
+                        .accountInfo(null)
+                        .build();
+
             fromAccountNumber.setAccountBalance(fromAccountNumber.getAccountBalance().subtract(req.getAmount()));
             toAccountNumber.setAccountBalance(toAccountNumber.getAccountBalance().add(req.getAmount()));
             repo.save(fromAccountNumber);
             repo.save(toAccountNumber);
+
             EmailDeets emailDetails = EmailDeets.builder()
                     .recipient(fromAccountNumber.getEmail())
                     .subject("ACCOUNT TRANSFER")
-                    .messageBody("amount of " +req.getAmount()+ " has been debited" )
+                    .messageBody("amount of " + req.getAmount() + " has been debited")
                     .build();
             emailservice.sendEmailAlert(emailDetails);
 
             TransactionDto transactionDto = TransactionDto.builder()
                     .accountNumber(toAccountNumber.getAccountNumber())
                     .transactionType("credit")
-                    .amount(fromAccountNumber.getAccountBalance())
+                    .amount(req.getAmount())
                     .balanceAfterTransaction(toAccountNumber.getAccountBalance())
                     .build();
             transactionService.saveTransaction(transactionDto);
@@ -130,7 +139,7 @@ public class UserServiceImpl implements UserService {
             TransactionDto transactionDtoTwo = TransactionDto.builder()
                     .accountNumber(fromAccountNumber.getAccountNumber())
                     .transactionType("debit")
-                    .amount(toAccountNumber.getAccountBalance())
+                    .amount(req.getAmount())
                     .balanceAfterTransaction(fromAccountNumber.getAccountBalance())
                     .build();
             transactionService.saveTransaction(transactionDtoTwo);
@@ -138,14 +147,41 @@ public class UserServiceImpl implements UserService {
             return TransferResponse.builder()
                     .responseCode(AccountUtils.ACCOUNT_DEBITED_SUCCESS)
                     .responseMessage(AccountUtils.ACCOUNT_DEBITED_MESSAGE)
-                    .debitedAmont(req.getAmount())
+                    .debitedAmount(req.getAmount())
                     .accountInfo(AccountInfo.builder()
                             .accountNumber(req.getFromAccountNumber())
-                            .accountName(fromAccountNumber.getFirstName()+" "+fromAccountNumber.getLastName())
+                            .accountName(fromAccountNumber.getFirstName() + " " + fromAccountNumber.getLastName())
                             .accountBalance(fromAccountNumber.getAccountBalance())
                             .build())
                     .build();
-        }
 
+        } else {
+            return TransferResponse.builder()
+                    .responseCode(AccountUtils.ACCOUNT_NOT_EXIST_CODE)
+                    .responseMessage(AccountUtils.ACCOUNT_NOT_EXIST_MESSAGE)
+                    .accountInfo(null)
+                    .build();
+        }
     }
+    public BankResponse changePassword(PasswordChangeEntity passwordChangeEntity){
+            Boolean isAccountExist = repo.existsByEmail(passwordChangeEntity.getEmail());
+            if(Boolean.FALSE.equals(isAccountExist)){
+                return BankResponse.builder()
+                        .responseMessage(AccountUtils.INVALID_DETAILS)
+                        .build();
+            }
+            User user = repo.findByAccountNumber(passwordChangeEntity.getAccountNumber());
+            if(Boolean.FALSE.equals(passwordEncoder
+                    .matches(passwordChangeEntity.getCurrentPassword(), user.getPassword()))){
+                return BankResponse.builder()
+                        .responseMessage(AccountUtils.INVALID_DETAILS)
+                        .build();
+            }
+            user.setPassword(passwordEncoder.encode(passwordChangeEntity.getNewPassword()));
+            repo.save(user);
+            return BankResponse.builder()
+                    .responseMessage(AccountUtils.PASSWORD_CHANGED)
+                    .build();
+    }
+
 }

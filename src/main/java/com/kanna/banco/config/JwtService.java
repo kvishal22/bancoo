@@ -32,7 +32,8 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    private String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, long expiration){
+    //private
+    public String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, long expiration){
         return Jwts
                 .builder()
                 .setClaims(extraClaims)
@@ -74,7 +75,9 @@ public class JwtService {
     }
 
     private Key getSignInKey() {
-        byte keyBytes[] = Decoders.BASE64.decode(secretKey);
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+
+
 }

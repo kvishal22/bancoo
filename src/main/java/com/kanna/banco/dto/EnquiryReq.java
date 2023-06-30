@@ -11,5 +11,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class EnquiryReq {
     private String accountNumber;
+    private String password;
 
 }

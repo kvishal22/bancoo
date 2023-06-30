@@ -1,6 +1,5 @@
 package com.kanna.banco.statement;
 
-import com.kanna.banco.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,8 +11,6 @@ import org.springframework.stereotype.Component;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.UUID;
 
 @Entity
 @Data
