@@ -1,4 +1,4 @@
-package com.kanna.banco.password;
+package com.kanna.banco.dto;
 
 import lombok.Data;
 

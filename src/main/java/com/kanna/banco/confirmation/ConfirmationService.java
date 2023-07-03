@@ -6,8 +6,8 @@ import com.kanna.banco.dto.EmailDeets;
 import com.kanna.banco.dto.UserReq;
 import com.kanna.banco.entity.User;
 import com.kanna.banco.entity.UserRepo;
-import com.kanna.banco.password.PasswordForgotEntity;
-import com.kanna.banco.password.PasswordForgotReq;
+import com.kanna.banco.dto.PasswordForgotEntity;
+import com.kanna.banco.dto.PasswordForgotReq;
 import com.kanna.banco.service.Emailservice;
 import com.kanna.banco.utils.AccountUtils;
 import lombok.RequiredArgsConstructor;
@@ -49,14 +49,14 @@ public class ConfirmationService {
 
         userRepo.save(newUser);
 
-        ConfirmationToken confirmationToken = new ConfirmationToken(newUser);
+        ConfirmationTokenDetail confirmationTokenDetail = new ConfirmationTokenDetail(newUser);
 
-        confirmationTokenRepo.save(confirmationToken);
+        confirmationTokenRepo.save(confirmationTokenDetail);
         SimpleMailMessage mailMessage = new SimpleMailMessage();
         mailMessage.setTo(userReq.getEmail());
         mailMessage.setSubject("Complete Registration!");
         mailMessage.setText("To confirm your account, please click here : "
-                + "http://localhost:8080/confirm/account?token=" + confirmationToken.getRandomToken());
+                + "http://localhost:8080/confirm/account?token=" + confirmationTokenDetail.getConfirmationToken());
 
         emailservice.mailSend(mailMessage);
 
@@ -65,7 +65,7 @@ public class ConfirmationService {
 
     public BankResponse activateAccount(String confirmationToken) {
 
-        ConfirmationToken token = confirmationTokenRepo.findByConfirmationToken(confirmationToken);
+        ConfirmationTokenDetail token = confirmationTokenRepo.findByConfirmationToken(confirmationToken);
 
         if (token != null) {
             User user = userRepo.findByEmail(token.getUser().getEmail())
@@ -75,8 +75,8 @@ public class ConfirmationService {
             EmailDeets emailDeets = EmailDeets.builder()
                     .recipient(user.getEmail())
                     .subject("Account Creation")
-                    .messageBody("Congrats! Your  account has been created successfully. \n" +
-                            "Account Name: " + user.getFirstName() + " " + user.getLastName() + "\n Account Number: " +
+                    .messageBody("Congrats! Your account has been created successfully. \n" +
+                            "Account Name: " + user.getFirstName() + " " + user.getLastName() + "\nAccount Number: " +
                             user.getAccountNumber())
                     .build();
             emailservice.sendEmailAlert(emailDeets);
@@ -123,14 +123,14 @@ public class ConfirmationService {
 
         if (user!=null && Boolean.TRUE.equals(isAccountExist)) {
 
-            ConfirmationToken confirmationToken = generateConfirmationToken(user);
-            confirmationToken.setCreatedAt(new Date());
-            confirmationTokenRepo.save(confirmationToken);
+            ConfirmationTokenDetail confirmationTokenDetail = generateConfirmationToken(user);
+            confirmationTokenDetail.setCreatedAt(new Date());
+            confirmationTokenRepo.save(confirmationTokenDetail);
             SimpleMailMessage mailMessage = new SimpleMailMessage();
             mailMessage.setTo(passwordForgotReq.getEmail());
             mailMessage.setSubject("Request New Password!");
             mailMessage.setText("to change this password enter this token : "
-                    + confirmationToken.getRandomToken());
+                    + confirmationTokenDetail.getConfirmationToken());
             emailservice.mailSend(mailMessage);
 
             return "check your email to change the password";
@@ -139,19 +139,18 @@ public class ConfirmationService {
             return "invalid details";
         }
     }
-    private ConfirmationToken generateConfirmationToken(User user) {
+    private ConfirmationTokenDetail generateConfirmationToken(User user) {
 
-        ConfirmationToken confirmationToken = new ConfirmationToken();
-        confirmationToken.setUser(user);
+        ConfirmationTokenDetail confirmationTokenDetail = new ConfirmationTokenDetail();
+        confirmationTokenDetail.setUser(user);
 
         String token = UUID.randomUUID().toString();
 
-        confirmationToken.setRandomToken(token);
+        confirmationTokenDetail.setConfirmationToken(token);
 
-        confirmationTokenRepo.save(confirmationToken);
+        confirmationTokenRepo.save(confirmationTokenDetail);
 
-        return confirmationToken;
+        return confirmationTokenDetail;
     }
-
 
 }

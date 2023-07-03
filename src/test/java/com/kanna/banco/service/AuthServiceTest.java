@@ -45,9 +45,6 @@ import static org.mockito.Mockito.*;
     @InjectMocks
     private AuthService authService;
 
-
-    @Mock
-    private Token token;
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
@@ -78,7 +75,7 @@ import static org.mockito.Mockito.*;
         verify(userRepo, times(1)).findByEmail(email);
         verify(jwtService, times(1)).generateToken(user);
         verify(tokenRepo, times(1)).save(any(Token.class));
-        verify(tokenRepo, times(1)).findAllValidTokenByUser(user.getId());
+        verify(tokenRepo, times(1)).findAllValidJwtTokenByUser(user.getId());
     }
 
     @Test
@@ -104,7 +101,7 @@ import static org.mockito.Mockito.*;
             token1.setExpired(false);
             token1.setRevoked(false);
         validToken.add(token1);
-        when(tokenRepo.findAllValidTokenByUser(user.getId())).thenReturn(validToken);
+        when(tokenRepo.findAllValidJwtTokenByUser(user.getId())).thenReturn(validToken);
         authService.revokeAllUserTokens(user);
         verify(token1).setExpired(true);
         verify(token1).setRevoked(true);
@@ -116,7 +113,7 @@ import static org.mockito.Mockito.*;
         User user = new User();
         user.setId(1);
 
-        when(tokenRepo.findAllValidTokenByUser(user.getId())).thenReturn(new ArrayList<>());
+        when(tokenRepo.findAllValidJwtTokenByUser(user.getId())).thenReturn(new ArrayList<>());
 
        verifyNoInteractions(tokenRepo);
 
@@ -129,7 +126,7 @@ import static org.mockito.Mockito.*;
     void saveValidTokens(){
         User user = new User();
         var validToknes = tokenRepo
-                .findAllValidTokenByUser(user.getId());
+                .findAllValidJwtTokenByUser(user.getId());
         Token token = new Token();
         token.setRevoked(true);
         token.setExpired(true);

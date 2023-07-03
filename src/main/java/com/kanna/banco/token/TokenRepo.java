@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface TokenRepo extends JpaRepository<Token, Integer> {
     @Query("SELECT t FROM Token t INNER JOIN t.user u " +
        "WHERE u.id = :id AND (t.expired = false OR t.revoked = false)")
-    List<Token> findAllValidTokenByUser(Integer id);
-    Optional<Token> findByToken(String token);
+    List<Token> findAllValidJwtTokenByUser(Integer id);
+    Optional<Token> findByJwtToken(String token);
 
 }

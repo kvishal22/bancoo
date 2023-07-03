@@ -3,7 +3,10 @@ package com.kanna.banco.controller;
 import com.kanna.banco.confirmation.ConfirmationService;
 import com.kanna.banco.confirmation.ConfirmationTokenController;
 import com.kanna.banco.dto.BankResponse;
+import com.kanna.banco.dto.PasswordChangeEntity;
 import com.kanna.banco.dto.UserReq;
+import com.kanna.banco.service.UserServiceImpl;
+import com.kanna.banco.utils.AccountUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -23,20 +26,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
- class ConfirmationTokenControllerTest {
+ class ConfirmationTokenDetailControllerTest {
 
     @InjectMocks
     private ConfirmationTokenController confirmationTokenController;
 
     @Mock
     private ConfirmationService confirmationService;
+    @Mock
+    private UserServiceImpl userService;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        confirmationTokenController = new ConfirmationTokenController(confirmationService);
+        confirmationTokenController = new ConfirmationTokenController(confirmationService,userService);
         mockMvc = MockMvcBuilders.standaloneSetup(confirmationTokenController).build();
     }
     @Test
@@ -67,7 +72,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         verifyNoMoreInteractions(confirmationService);
     }
     @Test
-     void confirmUserAccountShouldReturnBankResponse() throws Exception {
+     void testConfirmUserAccountShouldReturnBankResponse() throws Exception {
         String confirmationToken = "123456";
         BankResponse expectedResponse = new BankResponse();
 
@@ -77,6 +82,31 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                         .param("token", confirmationToken))
                 .andExpect(status().isOk());
         verify(confirmationService,times(1)).activateAccount(confirmationToken);
+
+    }
+    @Test
+     void testPasswordChange() throws Exception {
+
+        BankResponse bankResponse = new BankResponse();
+        bankResponse.setResponseMessage("password changed successfully");
+
+
+        when(userService.changePassword(Mockito.any(PasswordChangeEntity.class)))
+                .thenReturn(bankResponse);
+
+        mockMvc.perform(get("/password/change")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"newPassword\":\"vishal\"," +
+                        "\"email\":\"vk\"," +
+                        "\"accountNumber\":\"2344\","+
+                        "\"currentPassword\":\"@34234\"}")
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.content()
+                        .json("{\"responseCode\":null,"+
+                                "\"responseMessage\":\"password changed successfully\"," +
+                                "\"accountInfo\":null}"))
+             .andDo(print());
 
     }
 }

@@ -3,6 +3,7 @@ package com.kanna.banco.service;
 import com.kanna.banco.dto.*;
 import com.kanna.banco.entity.User;
 import com.kanna.banco.entity.UserRepo;
+import com.kanna.banco.dto.PasswordChangeEntity;
 import com.kanna.banco.statement.TransactionDto;
 import com.kanna.banco.statement.TransactionService;
 import com.kanna.banco.utils.AccountUtils;
@@ -446,6 +447,71 @@ import static org.mockito.Mockito.*;
          Assertions.assertNotNull(result);
          Assertions.assertEquals(AccountUtils.YOU_CANT_TRANSEFER_ZERO, result.getResponseMessage());
      }
+     @Test
+     void passwordChangeSuccessful(){
+         User user = new User();
+         user.setPassword("dasdasd");
+         user.setAccountNumber("3244");
+         user.setEmail("dadkjk@gmail.com");
 
+         PasswordChangeEntity passwordChangeEntity = new PasswordChangeEntity();
+         passwordChangeEntity.setNewPassword("NDJKSUIARFF");
+         passwordChangeEntity.setCurrentPassword("dasdasd");
+         passwordChangeEntity.setEmail("dadkjk@gmail.com");
+         passwordChangeEntity.setAccountNumber("3244");
+
+         when(userRepo.existsByEmail("dadkjk@gmail.com")).thenReturn(true);
+         when(userRepo.findByAccountNumber("3244")).thenReturn(user);
+         when(passwordEncoder.matches(passwordChangeEntity.getCurrentPassword(),user.getPassword())).thenReturn(true);
+
+         BankResponse bankResponse = userService.changePassword(passwordChangeEntity);
+
+         Assertions.assertEquals(AccountUtils.PASSWORD_CHANGED,bankResponse.getResponseMessage());
+
+     }
+     @Test
+     void passwordChangeUnSuccessfulCurrentPasswordIncorrect(){
+         User user = new User();
+         user.setPassword("dasdasd");
+         user.setAccountNumber("3244");
+         user.setEmail("dadkjk@gmail.com");
+
+         PasswordChangeEntity passwordChangeEntity = new PasswordChangeEntity();
+         passwordChangeEntity.setNewPassword("NDJKSUIARFF");
+         passwordChangeEntity.setCurrentPassword("dasdas");
+         passwordChangeEntity.setEmail("dadkjk@gmail.com");
+         passwordChangeEntity.setAccountNumber("3244");
+
+         when(userRepo.existsByEmail("dadkjk@gmail.com")).thenReturn(true);
+         when(userRepo.findByAccountNumber("3244")).thenReturn(user);
+         when(passwordEncoder.matches(passwordChangeEntity.getCurrentPassword(),user.getPassword())).thenReturn(false);
+
+         BankResponse bankResponse = userService.changePassword(passwordChangeEntity);
+
+         Assertions.assertEquals(AccountUtils.INVALID_DETAILS,bankResponse.getResponseMessage());
+
+     }
+     @Test
+     void passwordChangeUnSuccessfulAccountNotExist(){
+         User user = new User();
+         user.setPassword("dasdasd");
+         user.setAccountNumber("3244");
+         user.setEmail("dadkjk@gmail.com");
+
+         PasswordChangeEntity passwordChangeEntity = new PasswordChangeEntity();
+         passwordChangeEntity.setNewPassword("NDJKSUIARFF");
+         passwordChangeEntity.setCurrentPassword("dasdas");
+         passwordChangeEntity.setEmail("dadkjk@gmail.com");
+         passwordChangeEntity.setAccountNumber("3244");
+
+         when(userRepo.existsByEmail("dadkj@gmail.com")).thenReturn(false);
+         when(userRepo.findByAccountNumber("324")).thenReturn(user);
+         when(passwordEncoder.matches(passwordChangeEntity.getCurrentPassword(),user.getPassword())).thenReturn(true);
+
+         BankResponse bankResponse = userService.changePassword(passwordChangeEntity);
+
+         Assertions.assertEquals(AccountUtils.INVALID_DETAILS,bankResponse.getResponseMessage());
+
+     }
  }
 

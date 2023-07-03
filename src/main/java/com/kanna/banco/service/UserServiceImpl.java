@@ -3,7 +3,7 @@ package com.kanna.banco.service;
 import com.kanna.banco.dto.*;
 import com.kanna.banco.entity.User;
 import com.kanna.banco.entity.UserRepo;
-import com.kanna.banco.password.PasswordChangeEntity;
+import com.kanna.banco.dto.PasswordChangeEntity;
 import com.kanna.banco.statement.TransactionDto;
 import com.kanna.banco.statement.TransactionService;
 import com.kanna.banco.utils.AccountUtils;

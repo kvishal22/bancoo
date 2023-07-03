@@ -15,13 +15,13 @@ import java.util.UUID;
 @NoArgsConstructor
 @Table(name = "confirmationTokenparttwo")
 @Data
-public class ConfirmationToken{
+public class ConfirmationTokenDetail{
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long tokenId;
 
-    private String randomToken;
+    private String confirmationToken;
 
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt;
@@ -29,9 +29,9 @@ public class ConfirmationToken{
     @OneToOne(targetEntity = User.class,fetch = FetchType.EAGER)
     @JoinColumn(nullable = false,name = "user_ids")
     private User user;
-    public ConfirmationToken(User user) {
+    public ConfirmationTokenDetail(User user) {
         this.user = user;
         createdAt = new Date();
-        randomToken = UUID.randomUUID().toString();
+        confirmationToken = UUID.randomUUID().toString();
     }
 }

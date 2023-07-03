@@ -25,14 +25,13 @@ public class AccountUtils {
     public static final String INVALID_DETAILS = "enter valid details";
     public static final String PASSWORD_CHANGED = "password changed successfully";
 
-    public static String generateAccountNumber() {
+    public static String generateAccountNumber(){
 
         Year currentYear = Year.now();
-
         int min = 100000;
         int max = 999999;
+        Random random = new Random();
 
-         Random random = new Random();
         int randNumber = random.nextInt(max - min + 1) + min;
 
         String year = String.valueOf(currentYear);
@@ -43,5 +42,5 @@ public class AccountUtils {
 
         return accountNumber.append(year).append(randomNumber).toString();
     }
+    }
 
-}

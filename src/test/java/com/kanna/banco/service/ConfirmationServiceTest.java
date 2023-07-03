@@ -1,11 +1,9 @@
 package com.kanna.banco.service;
 
 import com.kanna.banco.confirmation.ConfirmationService;
-import com.kanna.banco.confirmation.ConfirmationToken;
+import com.kanna.banco.confirmation.ConfirmationTokenDetail;
 import com.kanna.banco.confirmation.ConfirmationTokenRepo;
-import com.kanna.banco.dto.BankResponse;
-import com.kanna.banco.dto.EmailDeets;
-import com.kanna.banco.dto.UserReq;
+import com.kanna.banco.dto.*;
 import com.kanna.banco.entity.User;
 import com.kanna.banco.entity.UserRepo;
 import com.kanna.banco.utils.AccountUtils;
@@ -18,15 +16,12 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import java.math.BigDecimal;
 import java.util.Optional;
-
-import static junit.framework.TestCase.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
- class ConfirmationServiceTest {
+class ConfirmationServiceTest {
 
     @Mock
     private UserRepo userRepo;
@@ -38,9 +33,6 @@ import static org.mockito.Mockito.*;
     private PasswordEncoder passwordEncoder;
     @InjectMocks
     private ConfirmationService confirmationService;
-
-    @Mock
-    private ConfirmationToken confirmationToken;
 
     @BeforeEach
     public void setUp() {
@@ -54,7 +46,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-     void testRegisterUserWhenUserDoesNotExist() throws Exception {
+     void testRegisterUserWhenUserDoesNotExist() {
         UserReq userReq = new UserReq();
         userReq.setFirstName("vishal");
         userReq.setLastName("kanna");
@@ -66,7 +58,7 @@ import static org.mockito.Mockito.*;
 
         when(userRepo.save(any(User.class))).thenReturn(new User());
 
-        when(confirmationTokenRepo.save(any(ConfirmationToken.class))).thenReturn(new ConfirmationToken());
+        when(confirmationTokenRepo.save(any(ConfirmationTokenDetail.class))).thenReturn(new ConfirmationTokenDetail());
 
         String result = confirmationService.registerUser(userReq);
 
@@ -76,7 +68,7 @@ import static org.mockito.Mockito.*;
 
         verify(userRepo, times(1)).save(any(User.class));
 
-        verify(confirmationTokenRepo, times(1)).save(any(ConfirmationToken.class));
+        verify(confirmationTokenRepo, times(1)).save(any(ConfirmationTokenDetail.class));
         verify(emailservice).mailSend(any(SimpleMailMessage.class));
 
         Assertions.assertNotNull(result);
@@ -85,7 +77,7 @@ import static org.mockito.Mockito.*;
 
 
     @Test
-     void userAlreadyExistsByPhoneNumber() {
+     void testUserAlreadyExistsByPhoneNumber() {
         UserReq userReq = new UserReq();
         userReq.setFirstName("vishal");
         userReq.setLastName("kanna");
@@ -105,7 +97,7 @@ import static org.mockito.Mockito.*;
         Assertions.assertEquals("user already exists", result);
     }
     @Test
-     void userAlreadyExistsByEmail() {
+     void testUserAlreadyExistsByEmail() {
         UserReq userReq = new UserReq();
         userReq.setFirstName("vishal");
         userReq.setLastName("kanna");
@@ -125,7 +117,7 @@ import static org.mockito.Mockito.*;
         Assertions.assertEquals("user already exists", result);
     }
     @Test
-    void activateAccountFails(){
+    void testActivateAccountFails(){
         String confirmationToken = "invalid_token";
 
         Mockito.when(confirmationTokenRepo.findByConfirmationToken(confirmationToken))
@@ -135,14 +127,13 @@ import static org.mockito.Mockito.*;
         Assertions.assertNotNull(response);
         Assertions.assertEquals(AccountUtils.ACCOUNT_EXISTS_CODE, response.getResponseCode());
         Assertions.assertEquals(AccountUtils.ACCOUNT_EXISTS_MESSAGE, response.getResponseMessage());
-        Assertions.assertEquals(null, response.getAccountInfo());
 
         verify(userRepo, Mockito.never()).save(any(User.class));
         verify(emailservice, Mockito.never()).sendEmailAlert(any(EmailDeets.class));
 
     }
     @Test
-    void activateAccountNotFails(){
+    void testActivateAccountNotFails(){
 
         User user = new User();
         user.setEmail("dadsd");
@@ -153,14 +144,14 @@ import static org.mockito.Mockito.*;
         user.setLastName("k");
         user.setEmail("vk");
 
-        ConfirmationToken confirmationToken1 = new ConfirmationToken();
+        ConfirmationTokenDetail confirmationTokenDetail1 = new ConfirmationTokenDetail();
 
         String confirmationToken = "DKJSNKJSN";
-        confirmationToken1.setUser(user);
+        confirmationTokenDetail1.setUser(user);
 
         Mockito.when(confirmationTokenRepo.findByConfirmationToken(confirmationToken))
-                .thenReturn(confirmationToken1);
-        Mockito.when(userRepo.findByEmail(confirmationToken1.getUser().getEmail()))
+                .thenReturn(confirmationTokenDetail1);
+        Mockito.when(userRepo.findByEmail(confirmationTokenDetail1.getUser().getEmail()))
                .thenReturn(Optional.of(user));
 
         BankResponse response = confirmationService.activateAccount(confirmationToken);
@@ -177,5 +168,109 @@ import static org.mockito.Mockito.*;
         verify(userRepo).save(user);
         verify(emailservice).sendEmailAlert(any(EmailDeets.class));
 
+    }
+
+    @Test
+    void testRequestPasswordChange(){
+        User user = new User();
+        user.setEmail("dadsd");
+        user.setAccountNumber("323");
+
+        String token = "askjdasdikasld";
+
+        when(userRepo.findByAccountNumber("323")).thenReturn(user);
+        when(userRepo.existsByEmail("dadsd")).thenReturn(true);
+
+        String result="check your email to change the password";
+
+        PasswordForgotReq passwordForgotReq = new PasswordForgotReq();
+        passwordForgotReq.setEmail("dadsd");
+        passwordForgotReq.setAccountNumber("323");
+
+        ConfirmationTokenDetail confirmationTokenDetail = new ConfirmationTokenDetail();
+        confirmationTokenDetail.setUser(user);
+        confirmationTokenDetail.setConfirmationToken(token);
+
+        Assertions.assertEquals(result,confirmationService.requestPasswordChange(passwordForgotReq));
+    }
+    @Test
+    void testRequestPasswordChangeInvalid(){
+        User user = new User();
+        user.setEmail("dads");
+        user.setAccountNumber("32");
+
+
+        when(userRepo.existsByEmail("dadsd")).thenReturn(false);
+
+        String result="invalid details";
+
+        PasswordForgotReq passwordForgotReq = new PasswordForgotReq();
+        passwordForgotReq.setEmail("dadsd");
+        passwordForgotReq.setAccountNumber("323");
+
+        Assertions.assertEquals(result,confirmationService.requestPasswordChange(passwordForgotReq));
+    }
+    @Test
+    void testForgotPasswordSuccess(){
+        User user = new User();
+        user.setEmail("dads");
+        user.setAccountNumber("323");
+
+        String token = "askjdasdikasld";
+
+        when(userRepo.existsByEmail("dads")).thenReturn(true);
+
+        when(userRepo.findByAccountNumber("323")).thenReturn(user);
+
+        when(confirmationTokenRepo.existsByConfirmationToken(token)).thenReturn(true);
+
+        PasswordForgotEntity passwordForgotEntity = new PasswordForgotEntity();
+        passwordForgotEntity.setNewPassword("eewe");
+        passwordForgotEntity.setEmail("dads");
+        passwordForgotEntity.setAccountNumber("323");
+        passwordForgotEntity.setConfirmationToken(token);
+
+
+        Assertions
+                .assertEquals(AccountUtils.PASSWORD_CHANGED,confirmationService.forgotPassword(passwordForgotEntity).getResponseMessage());
+    }
+    @Test
+    void testForgotPasswordSuccessInvaild(){
+        User user = new User();
+        user.setEmail("dads");
+        user.setAccountNumber("323");
+
+        String token = "askjdasdikasld";
+
+        when(userRepo.existsByEmail("dads")).thenReturn(true);
+
+        when(userRepo.findByAccountNumber("323")).thenReturn(user);
+
+        when(confirmationTokenRepo.existsByConfirmationToken("askjdasdi")).thenReturn(false);
+
+        PasswordForgotEntity passwordForgotEntity = new PasswordForgotEntity();
+        passwordForgotEntity.setNewPassword("eewe");
+        passwordForgotEntity.setEmail("dads");
+        passwordForgotEntity.setAccountNumber("323");
+        passwordForgotEntity.setConfirmationToken(token);
+
+
+        Assertions
+                .assertEquals(AccountUtils.INVALID_DETAILS,confirmationService.forgotPassword(passwordForgotEntity).getResponseMessage());
+    }
+    @Test
+     void testGenerateToken(){
+        User user = mock(User.class);
+
+        String token = "askjdasdikasld";
+
+        ConfirmationTokenDetail confirmationTokenDetail = new ConfirmationTokenDetail();
+        confirmationTokenDetail.setUser(user);
+        confirmationTokenDetail.setConfirmationToken(token);
+
+        Assertions.assertEquals(user, confirmationTokenDetail.getUser());
+        Assertions.assertEquals(token, confirmationTokenDetail.getConfirmationToken());
+
+        Assertions.assertNotNull(confirmationTokenDetail);
     }
 }

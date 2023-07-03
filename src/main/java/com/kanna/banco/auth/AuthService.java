@@ -50,7 +50,7 @@ public class AuthService {
     }
         //private
         public void revokeAllUserTokens (User user){
-        var validUserTokens = tokenRepo.findAllValidTokenByUser(user.getId());
+        var validUserTokens = tokenRepo.findAllValidJwtTokenByUser(user.getId());
         if (validUserTokens.isEmpty())
             return;
         validUserTokens.forEach(token -> {

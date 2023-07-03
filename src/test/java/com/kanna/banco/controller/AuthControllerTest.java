@@ -2,8 +2,6 @@ package com.kanna.banco.controller;
 
 import com.kanna.banco.auth.AuthController;
 import com.kanna.banco.auth.AuthService;
-import com.kanna.banco.auth.AuthenticationReq;
-import com.kanna.banco.auth.AuthenticationResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
