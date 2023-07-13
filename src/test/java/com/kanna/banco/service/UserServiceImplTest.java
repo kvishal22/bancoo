@@ -165,16 +165,14 @@ class UserServiceImplTest {
         when(userRepo.existsByAccountNumber(enquiryReq.getAccountNumber())).thenReturn(false);
         when(passwordEncoder.matches(enquiryReq.getPassword(),user.getPassword())).thenReturn(false);
 
-        BankResponse result = new BankResponse();
-        result.setResponseMessage(AccountUtils.INVALID_DETAILS);
-
         BankResponse actualResponse = userService.nameEnquiry(enquiryReq);
+        actualResponse.setResponseMessage(AccountUtils.INVALID_DETAILS);
 
         verify(userRepo, times(1)).existsByAccountNumber(enquiryReq.getAccountNumber());
         verify(userRepo, times(1)).findByAccountNumber(enquiryReq.getAccountNumber());
 
-        Assertions.assertEquals(AccountUtils.INVALID_DETAILS,result.getResponseMessage());
-        Assertions.assertNotNull(result);
+        Assertions.assertEquals(AccountUtils.INVALID_DETAILS,actualResponse.getResponseMessage());
+        Assertions.assertNotNull(actualResponse);
     }
 
     @Test
