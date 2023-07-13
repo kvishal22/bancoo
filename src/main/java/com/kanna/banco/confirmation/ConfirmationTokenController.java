@@ -9,6 +9,9 @@ import com.kanna.banco.service.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import javax.mail.MessagingException;
+import javax.validation.Valid;
+
 @RestController
 @RequiredArgsConstructor
 public class ConfirmationTokenController {
@@ -18,7 +21,7 @@ public class ConfirmationTokenController {
     private final UserServiceImpl userService;
 
     @PostMapping("/register")
-        public String registerAccount(@RequestBody UserReq userReq){
+        public BankResponse registerAccount(@Valid @RequestBody UserReq userReq) throws MessagingException {
             return service.registerUser(userReq);
         }
 
@@ -27,15 +30,15 @@ public class ConfirmationTokenController {
         return service.activateAccount(confirmationToken);
     }
     @GetMapping("/password/forgetPassword")
-    public BankResponse forgetPasswordCHange(@RequestBody PasswordForgotEntity passwordForgotEntity){
+    public BankResponse forgetPasswordCHange(@Valid @RequestBody PasswordForgotEntity passwordForgotEntity){
         return service.forgotPassword(passwordForgotEntity);
     }
     @GetMapping("/password/forgetPasswordReq")
-    public String forgePasswordReq(@RequestBody PasswordForgotReq passwordForgotReq){
+    public BankResponse forgePasswordReq(@RequestBody PasswordForgotReq passwordForgotReq){
         return service.requestPasswordChange(passwordForgotReq);
     }
     @GetMapping("/password/change")
-    public BankResponse passwordChange(@RequestBody PasswordChangeEntity passwordChangeEntity){
+    public BankResponse passwordChange(@Valid @RequestBody PasswordChangeEntity passwordChangeEntity){
         return userService.changePassword(passwordChangeEntity);
     }
 }

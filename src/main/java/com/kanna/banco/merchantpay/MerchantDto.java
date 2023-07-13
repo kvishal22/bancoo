@@ -1,4 +1,4 @@
-package com.kanna.banco.dto;
+package com.kanna.banco.merchantpay;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,23 +7,22 @@ import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotEmpty;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class TransferMoney {
+public class MerchantDto {
 
     @NotEmpty
-    private String fromAccountNumber;
+    private String merchantName;
     @NotEmpty
-    private String toAccountNumber;
+    private String accountNumber;
+    @NotEmpty
+    private String password;
     @NotEmpty
     private BigDecimal amount;
     @NotEmpty
-    private String password;
-    //new
-    private LocalDateTime scheduledTime;
+    private String email;
 
 }

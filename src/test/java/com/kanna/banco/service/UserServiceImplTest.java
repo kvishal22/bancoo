@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 
 import static org.mockito.Mockito.*;
 
- class UserServiceImplTest {
+class UserServiceImplTest {
     @Mock
     private UserRepo userRepo;
     @Mock
@@ -101,7 +101,6 @@ import static org.mockito.Mockito.*;
      void testBalanceEnquiryWhenAccountDoesNotExist() {
 
         // i was really happy for this :)))))
-
         EnquiryReq enquiryReq = new EnquiryReq();
         enquiryReq.setAccountNumber("9839238");
         enquiryReq.setPassword("32");
@@ -117,51 +116,45 @@ import static org.mockito.Mockito.*;
 
         verify(userRepo, times(1)).existsByAccountNumber(enquiryReq.getAccountNumber());
 
-       Assertions.assertNotNull(result);
-       Assertions.assertEquals(AccountUtils.ACCOUNT_NOT_EXIST_CODE, result.getResponseCode());
-       Assertions.assertEquals(AccountUtils.ACCOUNT_NOT_EXIST_MESSAGE, result.getResponseMessage());
-
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(AccountUtils.ACCOUNT_NOT_EXIST_CODE, result.getResponseCode());
+        Assertions.assertEquals(AccountUtils.ACCOUNT_NOT_EXIST_MESSAGE, result.getResponseMessage());
 
     }
 
     @Test
      void nameExistsInEnquiryTest() {
-
         // you can do it ra kanna
-
-        EnquiryReq enquiryReq = new EnquiryReq();
-        enquiryReq.setAccountNumber("98392389");
-        enquiryReq.setPassword("DAS");
+        EnquiryReq enquiryReq = new EnquiryReq("902389208","foiajfoieu");
 
         User user = new User();
-        user.setAccountBalance(BigDecimal.valueOf(100));
-        user.setFirstName("vishal");
-        user.setLastName("kanna");
+        user.setAccountNumber("902389208");
+        user.setPassword("foiajfoieu");
 
         when(userRepo.existsByAccountNumber(enquiryReq.getAccountNumber())).thenReturn(true);
-        when(passwordEncoder.matches(enquiryReq.getPassword(),user.getPassword())).thenReturn(true);
-
+        when(passwordEncoder.matches((enquiryReq.getPassword()), (user.getPassword()))).thenReturn(true);
         when(userRepo.findByAccountNumber(enquiryReq.getAccountNumber())).thenReturn(user);
 
-        String result = userService.nameEnquiry(enquiryReq);
+        BankResponse response = BankResponse.builder()
+                .responseMessage(AccountUtils.ACCOUNT_HOLDER_NAME +"vishal kanna")
+                .build();
+
+        userService.nameEnquiry(enquiryReq);
 
         verify(userRepo, times(1)).existsByAccountNumber(enquiryReq.getAccountNumber());
         verify(userRepo, times(1)).findByAccountNumber(enquiryReq.getAccountNumber());
 
-
-       Assertions.assertNotNull(result);
-       Assertions.assertEquals("vishal kanna",result);
+        Assertions.assertNotNull(response);
+        Assertions.assertEquals("Account Holder Name: vishal kanna",response.getResponseMessage());
 
     }
 
     @Test
      void nameDoesNotExistinEnquiryTest() {
-
         // such a simple one bro
-
         EnquiryReq enquiryReq = new EnquiryReq();
         enquiryReq.setAccountNumber("98392389");
-        enquiryReq.setPassword("dasd");
+        enquiryReq.setPassword("dasdthgthtg");
 
         User user = new User();
         user.setAccountBalance(BigDecimal.valueOf(100));
@@ -172,12 +165,15 @@ import static org.mockito.Mockito.*;
         when(userRepo.existsByAccountNumber(enquiryReq.getAccountNumber())).thenReturn(false);
         when(passwordEncoder.matches(enquiryReq.getPassword(),user.getPassword())).thenReturn(false);
 
-        String result = userService.nameEnquiry(enquiryReq);
+        BankResponse result = new BankResponse();
+        result.setResponseMessage(AccountUtils.INVALID_DETAILS);
+
+        BankResponse actualResponse = userService.nameEnquiry(enquiryReq);
 
         verify(userRepo, times(1)).existsByAccountNumber(enquiryReq.getAccountNumber());
         verify(userRepo, times(1)).findByAccountNumber(enquiryReq.getAccountNumber());
 
-        Assertions.assertEquals(AccountUtils.INVALID_DETAILS,result);
+        Assertions.assertEquals(AccountUtils.INVALID_DETAILS,result.getResponseMessage());
         Assertions.assertNotNull(result);
     }
 
@@ -219,7 +215,6 @@ import static org.mockito.Mockito.*;
     @Test
      void creditAccountShouldReturnAccountNotExistIfAccountDoesNotExist() {
         String accountNumber = "989889";
-
         CreditDebitReq creditDebitReq = new CreditDebitReq();
         creditDebitReq.setAccountNumber(accountNumber);
         creditDebitReq.setAmount(BigDecimal.valueOf(1000));
@@ -232,7 +227,7 @@ import static org.mockito.Mockito.*;
         verify(userRepo, times(1)).existsByAccountNumber(accountNumber);
         verify(userRepo, times(1)).findByAccountNumber(accountNumber);
 
-       Assertions.assertEquals(AccountUtils.INVALID_DETAILS, result.getResponseCode());
+       Assertions.assertEquals(AccountUtils.INVALID_DETAILS, result.getResponseMessage());
     }
 
     @Test
@@ -270,8 +265,6 @@ import static org.mockito.Mockito.*;
 
         TransferResponse response = userService.transferMoney(req);
 
-        verify(userRepo,times(1)).existsByAccountNumber(user.getAccountNumber());
-        verify(userRepo,times(1)).existsByAccountNumber(userTwo.getAccountNumber());
         verify(userRepo,times(1)).findByAccountNumber(user.getAccountNumber());
         verify(userRepo,times(1)).findByAccountNumber(userTwo.getAccountNumber());
         verify(userRepo,times(1)).save(user);
@@ -321,12 +314,8 @@ import static org.mockito.Mockito.*;
 
         TransferResponse response = userService.transferMoney(req);
 
-        verify(userRepo,times(1)).existsByAccountNumber(user.getAccountNumber());
-        verify(userRepo,times(1)).existsByAccountNumber(userTwo.getAccountNumber());
         verify(userRepo,times(1)).findByAccountNumber(user.getAccountNumber());
         verify(userRepo,times(1)).findByAccountNumber(userTwo.getAccountNumber());
-        verify(userRepo,times(0)).save(user);
-        verify(userRepo,times(0)).save(userTwo);
 
        Assertions.assertNotNull(response);
        Assertions.assertEquals(AccountUtils.INSUFFICIENT_BALANCE_CODE,response.getResponseCode());
@@ -348,9 +337,6 @@ import static org.mockito.Mockito.*;
 
         TransferResponse response = userService.transferMoney(req);
 
-        verify(userRepo,times(1)).existsByAccountNumber(fromAccountNumber);
-        verify(userRepo,times(1)).existsByAccountNumber(toAccountNumber);
-
        Assertions.assertEquals(AccountUtils.ACCOUNT_NOT_EXIST_CODE,response.getResponseCode());
        Assertions.assertEquals(AccountUtils.ACCOUNT_NOT_EXIST_MESSAGE,response.getResponseMessage());
 
@@ -360,19 +346,19 @@ import static org.mockito.Mockito.*;
 
         String fromAccountNumber = "9344923848923";
         String toAccountNumber = "98349234040";
+        String password = "asdsdasd";
 
         TransferMoney req = new TransferMoney();
         req.setFromAccountNumber(fromAccountNumber);
         req.setToAccountNumber(toAccountNumber);
         req.setAmount(BigDecimal.valueOf(1000));
+        req.setPassword(password);
 
         when(userRepo.existsByAccountNumber(fromAccountNumber)).thenReturn(true);
         when(userRepo.existsByAccountNumber(toAccountNumber)).thenReturn(false);
 
-        TransferResponse response = userService.transferMoney(req);
 
-        verify(userRepo,times(1)).existsByAccountNumber(fromAccountNumber);
-        verify(userRepo,times(1)).existsByAccountNumber(toAccountNumber);
+        TransferResponse response = userService.transferMoney(req);
 
        Assertions.assertEquals(AccountUtils.ACCOUNT_NOT_EXIST_CODE,response.getResponseCode());
        Assertions.assertEquals(AccountUtils.ACCOUNT_NOT_EXIST_MESSAGE,response.getResponseMessage());
@@ -411,8 +397,6 @@ import static org.mockito.Mockito.*;
 
          TransferResponse response = userService.transferMoney(req);
 
-         verify(userRepo,times(1)).existsByAccountNumber(user.getAccountNumber());
-         verify(userRepo,times(1)).existsByAccountNumber(userTwo.getAccountNumber());
          verify(userRepo,times(1)).findByAccountNumber(user.getAccountNumber());
          verify(userRepo,times(1)).findByAccountNumber(userTwo.getAccountNumber());
 

@@ -53,7 +53,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-     void testAuthenticateValidCredentials() {
+     void testAuthenticateValidCredentials(){
         String email = "test@example.com";
         String password = "password";
         String encodedPassword = "encodedPassword";

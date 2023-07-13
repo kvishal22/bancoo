@@ -22,13 +22,15 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
 
-        public AuthenticationResponse authenticate (AuthenticationReq request) {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.getEmail(),
-                            request.getPassword()
-                    )
-            );
+        public AuthenticationResponse authenticate (AuthenticationReq request){
+
+               authenticationManager.authenticate(
+                       new UsernamePasswordAuthenticationToken(
+                               request.getEmail(),
+                               request.getPassword()
+                       )
+               );
+
                 var user = userRepo.findByEmail(request.getEmail())
                         .orElseThrow(() -> new UsernameNotFoundException("email does not exist"));
                 var jwtToken = jwtService.generateToken(user);

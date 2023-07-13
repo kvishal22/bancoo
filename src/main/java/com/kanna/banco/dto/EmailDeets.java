@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -14,6 +15,7 @@ public class EmailDeets {
     private String messageBody;
     private String subject;
     private String attachment;
+
 
 }
 

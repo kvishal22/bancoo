@@ -6,7 +6,7 @@ import com.kanna.banco.dto.*;
 public interface UserService {
     BankResponse balanceEnquiry(EnquiryReq enquiryReq);
 
-    String nameEnquiry(EnquiryReq enquiryReq);
+    BankResponse nameEnquiry(EnquiryReq enquiryReq);
 
     BankResponse creditAccount(CreditDebitReq creditDebitReq);
 

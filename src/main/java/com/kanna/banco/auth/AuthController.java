@@ -13,7 +13,8 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/authenticate")
-    public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationReq req){
+    public ResponseEntity<AuthenticationResponse> authenticate (@RequestBody AuthenticationReq req){
+
         return ResponseEntity.ok(authService.authenticate(req));
     }
 

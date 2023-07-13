@@ -23,7 +23,6 @@ class AuthControllerTest {
     private MockMvc mockMvc;
     @Mock
     private AuthService authService;
-
     @InjectMocks
     private AuthController authController;
     @BeforeEach
@@ -35,7 +34,6 @@ class AuthControllerTest {
     }
     @Test
     void authenticate() throws Exception {
-
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/user/authenticate")
                         .contentType(MediaType.APPLICATION_JSON)

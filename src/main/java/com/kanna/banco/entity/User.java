@@ -40,7 +40,7 @@ public class User implements UserDetails {
     private String alternateNumber;
     private String status;
     private String password;
-    private boolean isEnabled;
+    private boolean isActive;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

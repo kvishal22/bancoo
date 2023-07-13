@@ -1,6 +1,7 @@
 package com.kanna.banco.config;
 
 
+import com.kanna.banco.exception.JwtAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +13,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -20,6 +23,7 @@ public class SecurityConfig {
 
     private  final AuthenticationProvider authenticationProvider;
     private  final JwtAuthFilter jwtAuthFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -31,6 +35,7 @@ public class SecurityConfig {
                         "/actuator/**",
                         "/password/**",
                         "/register",
+                        "/merchant/**",
                         "/confirm/**",
                         "/v2/api-docs",
                         "/v3/api-docs",
@@ -43,7 +48,12 @@ public class SecurityConfig {
                         "/webjars/**",
                         "/swagger-ui.html")
                 .permitAll()
+
+               //.antMatchers(GET, "/api/notanuser/v1/**").hasRole(MANAGER.name())
+               // .antMatchers(GET, "/api/notanuser/v1/**").hasAuthority(MANAGER_READ.name())
+
                 .anyRequest().authenticated()
+                .and().exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 .and().sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and().authenticationProvider(authenticationProvider)

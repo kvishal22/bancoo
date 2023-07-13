@@ -16,6 +16,8 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import javax.mail.MessagingException;
 import java.math.BigDecimal;
 import java.util.Optional;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,7 +48,7 @@ class ConfirmationServiceTest {
     }
 
     @Test
-     void testRegisterUserWhenUserDoesNotExist() {
+     void testRegisterUserWhenUserDoesNotExist() throws MessagingException {
         UserReq userReq = new UserReq();
         userReq.setFirstName("vishal");
         userReq.setLastName("kanna");
@@ -60,7 +62,7 @@ class ConfirmationServiceTest {
 
         when(confirmationTokenRepo.save(any(ConfirmationTokenDetail.class))).thenReturn(new ConfirmationTokenDetail());
 
-        String result = confirmationService.registerUser(userReq);
+        BankResponse result = confirmationService.registerUser(userReq);
 
         verify(userRepo, times(0)).findByEmail(userReq.getEmail());
         verify(userRepo, times(1)).existsByPhoneNumber(userReq.getPhoneNumber());
@@ -72,12 +74,12 @@ class ConfirmationServiceTest {
         verify(emailservice).mailSend(any(SimpleMailMessage.class));
 
         Assertions.assertNotNull(result);
-        Assertions.assertEquals("check your email to verify", result);
+        Assertions.assertEquals(AccountUtils.ACCOUNT_CREATION_MESSAGE, result.getResponseMessage());
     }
 
 
     @Test
-     void testUserAlreadyExistsByPhoneNumber() {
+     void testUserAlreadyExistsByPhoneNumber() throws MessagingException{
         UserReq userReq = new UserReq();
         userReq.setFirstName("vishal");
         userReq.setLastName("kanna");
@@ -87,17 +89,17 @@ class ConfirmationServiceTest {
         when(userRepo.existsByEmail(userReq.getEmail())).thenReturn(false);
         when(userRepo.existsByPhoneNumber(userReq.getPhoneNumber())).thenReturn(true);
 
-        String result = confirmationService.registerUser(userReq);
+        BankResponse result = confirmationService.registerUser(userReq);
 
         verify(userRepo, times(0)).findByEmail(userReq.getEmail());
         verify(userRepo, times(1)).existsByPhoneNumber(userReq.getPhoneNumber());
         verify(userRepo, times(1)).existsByEmail(userReq.getEmail());
 
         Assertions.assertNotNull(result);
-        Assertions.assertEquals("user already exists", result);
+        Assertions.assertEquals(AccountUtils.ACCOUNT_FOUND_MESSAGE, result.getResponseMessage());
     }
     @Test
-     void testUserAlreadyExistsByEmail() {
+     void testUserAlreadyExistsByEmail() throws MessagingException{
         UserReq userReq = new UserReq();
         userReq.setFirstName("vishal");
         userReq.setLastName("kanna");
@@ -107,14 +109,14 @@ class ConfirmationServiceTest {
         when(userRepo.existsByEmail(userReq.getEmail())).thenReturn(true);
         when(userRepo.existsByPhoneNumber(userReq.getPhoneNumber())).thenReturn(false);
 
-        String result = confirmationService.registerUser(userReq);
+        BankResponse result = confirmationService.registerUser(userReq);
 
         verify(userRepo, times(0)).findByEmail(userReq.getEmail());
         verify(userRepo, times(0)).existsByPhoneNumber(userReq.getPhoneNumber());
         verify(userRepo, times(1)).existsByEmail(userReq.getEmail());
 
         Assertions.assertNotNull(result);
-        Assertions.assertEquals("user already exists", result);
+        Assertions.assertEquals(AccountUtils.ACCOUNT_FOUND_MESSAGE, result.getResponseMessage());
     }
     @Test
     void testActivateAccountFails(){
@@ -125,8 +127,8 @@ class ConfirmationServiceTest {
 
         BankResponse response = confirmationService.activateAccount(confirmationToken);
         Assertions.assertNotNull(response);
-        Assertions.assertEquals(AccountUtils.ACCOUNT_EXISTS_CODE, response.getResponseCode());
-        Assertions.assertEquals(AccountUtils.ACCOUNT_EXISTS_MESSAGE, response.getResponseMessage());
+        Assertions.assertEquals(AccountUtils.INVALID_TOKEN_CODE, response.getResponseCode());
+        Assertions.assertEquals(AccountUtils.INVALID_TOKEN_MESSAGE, response.getResponseMessage());
 
         verify(userRepo, Mockito.never()).save(any(User.class));
         verify(emailservice, Mockito.never()).sendEmailAlert(any(EmailDeets.class));
@@ -134,19 +136,18 @@ class ConfirmationServiceTest {
     }
     @Test
     void testActivateAccountNotFails(){
-
         User user = new User();
         user.setEmail("dadsd");
-        user.setEnabled(true);
         user.setAccountNumber("323");
         user.setAccountBalance(BigDecimal.valueOf(0));
-        user.setFirstName("v");
+        user.setFirstName("visha");
         user.setLastName("k");
         user.setEmail("vk");
 
         ConfirmationTokenDetail confirmationTokenDetail1 = new ConfirmationTokenDetail();
 
         String confirmationToken = "DKJSNKJSN";
+
         confirmationTokenDetail1.setUser(user);
 
         Mockito.when(confirmationTokenRepo.findByConfirmationToken(confirmationToken))
@@ -155,20 +156,48 @@ class ConfirmationServiceTest {
                .thenReturn(Optional.of(user));
 
         BankResponse response = confirmationService.activateAccount(confirmationToken);
-
+        verify(userRepo).save(user);
+        verify(emailservice).sendEmailAlert(any(EmailDeets.class));
 
         Assertions.assertNotNull(response);
-        Assertions.assertEquals(AccountUtils.ACCOUNT_CREATION_SUCCESS, response.getResponseCode());
-        Assertions.assertEquals(AccountUtils.ACCOUNT_CREATION_MESSAGE, response.getResponseMessage());
-        Assertions.assertNotNull(response.getAccountInfo());
+        Assertions.assertEquals(AccountUtils.ACCOUNT_ACTIVATION_SUCCESS, response.getResponseCode());
+        Assertions.assertEquals(AccountUtils.ACCOUNT_ACTIVATION_MESSAGE, response.getResponseMessage());
         Assertions.assertEquals(user.getAccountBalance(), response.getAccountInfo().getAccountBalance());
         Assertions.assertEquals(user.getAccountNumber(), response.getAccountInfo().getAccountNumber());
         Assertions.assertEquals(user.getFirstName() + " " + user.getLastName(), response.getAccountInfo().getAccountName());
 
-        verify(userRepo).save(user);
-        verify(emailservice).sendEmailAlert(any(EmailDeets.class));
+    }
+
+    @Test
+    void testActivateAccountFailsIfAlreadyHasANAccount(){
+        User user = new User();
+        user.setEmail("dadsd");
+        user.setActive(true);    //if its false new account will be created
+        user.setAccountNumber("323");
+        user.setAccountBalance(BigDecimal.valueOf(0));
+        user.setFirstName("visha");
+        user.setLastName("k");
+        user.setEmail("vk");
+
+        ConfirmationTokenDetail confirmationTokenDetail1 = new ConfirmationTokenDetail();
+
+        String confirmationToken = "DKJSNKJSN";
+
+        confirmationTokenDetail1.setUser(user);
+
+        Mockito.when(confirmationTokenRepo.findByConfirmationToken(confirmationToken))
+                .thenReturn(confirmationTokenDetail1);
+        Mockito.when(userRepo.findByEmail(confirmationTokenDetail1.getUser().getEmail()))
+                .thenReturn(Optional.of(user));
+
+        BankResponse response = confirmationService.activateAccount(confirmationToken);
+
+        Assertions.assertNotNull(response);
+        Assertions.assertEquals(AccountUtils.ACCOUNT_EXISTS_CODE, response.getResponseCode());
+        Assertions.assertEquals(AccountUtils.ACCOUNT_EXISTS_MESSAGE, response.getResponseMessage());
 
     }
+
 
     @Test
     void testRequestPasswordChange(){
@@ -181,7 +210,8 @@ class ConfirmationServiceTest {
         when(userRepo.findByAccountNumber("323")).thenReturn(user);
         when(userRepo.existsByEmail("dadsd")).thenReturn(true);
 
-        String result="check your email to change the password";
+        BankResponse result= new BankResponse();
+        result.setResponseMessage(AccountUtils.CHECK_EMAIL);
 
         PasswordForgotReq passwordForgotReq = new PasswordForgotReq();
         passwordForgotReq.setEmail("dadsd");
@@ -202,13 +232,13 @@ class ConfirmationServiceTest {
 
         when(userRepo.existsByEmail("dadsd")).thenReturn(false);
 
-        String result="invalid details";
-
+        BankResponse bankResponse = new BankResponse();
+        bankResponse.setResponseMessage(AccountUtils.INVALID_DETAILS);
         PasswordForgotReq passwordForgotReq = new PasswordForgotReq();
         passwordForgotReq.setEmail("dadsd");
         passwordForgotReq.setAccountNumber("323");
 
-        Assertions.assertEquals(result,confirmationService.requestPasswordChange(passwordForgotReq));
+        Assertions.assertEquals(bankResponse,confirmationService.requestPasswordChange(passwordForgotReq));
     }
     @Test
     void testForgotPasswordSuccess(){

@@ -16,4 +16,9 @@ public class BankResponse {
     private String responseMessage;
     private AccountInfo accountInfo;
 
+    public BankResponse(String responseCode,String responseMessage){
+        this.responseCode=responseCode;
+        this.responseMessage=responseMessage;
+    }
+
 }

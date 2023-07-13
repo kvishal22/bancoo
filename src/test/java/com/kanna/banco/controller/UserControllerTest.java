@@ -69,17 +69,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         enquiryReq.setAccountNumber("2344");
         enquiryReq.setPassword("324423");
 
-        String expectedName = "vishal kanna";
+        BankResponse response = new BankResponse();
+        response.setResponseMessage("vishal");
 
         when(userService.nameEnquiry(enquiryReq))
-                .thenReturn(expectedName);
+                .thenReturn(response);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/notanuser/nameEnquiry")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"accountNumber\":\"2344\",\"password\":324423}")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.content().string(expectedName))
+                .andExpect(MockMvcResultMatchers.content()
+                        .json("{\"responseCode\":null,"+
+                                "\"responseMessage\":\"vishal\"," +
+                                "\"accountInfo\":null}"))
                 .andDo(print());
 
       verify(userService, times(1)).nameEnquiry(enquiryReq);

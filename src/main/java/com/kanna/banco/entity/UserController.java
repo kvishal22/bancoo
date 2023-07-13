@@ -4,7 +4,9 @@ import com.kanna.banco.dto.*;
 import com.kanna.banco.service.UserService;
 
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.web.bind.annotation.*;
+
 
 
 @RequiredArgsConstructor
@@ -19,7 +21,7 @@ public class UserController {
         return service.balanceEnquiry(enquiryReq);
     }
     @GetMapping("/nameEnquiry")
-    public String nameEnquiry(@RequestBody EnquiryReq enquiryReq){
+    public BankResponse nameEnquiry(@RequestBody EnquiryReq enquiryReq){
         return service.nameEnquiry(enquiryReq);
     }
     @PostMapping("/deposit")
